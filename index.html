@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical Analytics Assistant</title>
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏥</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --primary-dark: #2563eb;
+            --secondary: #10b981;
+            --danger: #ef4444;
+            --light: #f8fafc;
+            --dark: #1e293b;
+            --gray: #64748b;
+            --gray-light: #e2e8f0;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --info: #3b82f6;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f1f5f9;
+            margin: 0;
+            padding: 0;
+            color: var(--dark);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            margin-top: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        h1 {
+            color: var(--dark);
+            text-align: center;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            font-size: 2rem;
+        }
+        
+        .connection-status {
+            padding: 0.75rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .status-connected { 
+            background: #d1fae5; 
+            color: #065f46;
+            border-left: 4px solid var(--success);
+        }
+        
+        .status-disconnected { 
+            background: #fee2e2; 
+            color: #b91c1c;
+            border-left: 4px solid var(--danger);
+        }
+        
+        .status-connecting { 
+            background: #fef3c7; 
+            color: #92400e;
+            border-left: 4px solid var(--warning);
+        }
+        
+        input, textarea, select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--gray-light);
+            border-radius: 8px;
+            font-size: 1rem;
+            margin-bottom: 1rem;
+            transition: border 0.3s ease;
+            font-family: 'Inter', sans-serif;
+        }
+        
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+        
+        textarea {
+            height: 120px;
+            resize: vertical;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 0.75rem;
+            margin: 1rem 0;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .btn-primary { 
+            background: var(--primary); 
+            color: white; 
+        }
+        
+        .btn-primary:hover {
+            background: var(--primary-dark);
+        }
+        
+        .btn-secondary { 
+            background: var(--secondary); 
+            color: white; 
+        }
+        
+        .btn-secondary:hover {
+            background: #0d9488;
+        }
+        
+        .btn-danger { 
+            background: var(--danger); 
+            color: white; 
+        }
+        
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+        
+        button:disabled { 
+            opacity: 0.7; 
+            cursor: not-allowed;
+            background: var(--gray-light);
+            color: var(--gray);
+        }
+        
+        .spinner { 
+            display: inline-block; 
+            width: 1rem; 
+            height: 1rem; 
+            border: 2px solid rgba(255,255,255,0.3); 
+            border-top: 2px solid white; 
+            border-radius: 50%; 
+            animation: spin 1s linear infinite; 
+        }
+        
+        @keyframes spin { 
+            to { transform: rotate(360deg); } 
+        }
+        
+        .result-section, .history-section, .conversation-section {
+            margin-top: 2rem;
+        }
+        
+        .result-content, .history-content {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            max-height: 600px;
+            overflow-y: auto;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid var(--gray-light);
+        }
+        
+        .history-message {
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .history-message.user { 
+            background: #eff6ff; 
+            border-left: 4px solid var(--primary);
+        }
+        
+        .history-message.assistant { 
+            background: #ecfdf5; 
+            border-left: 4px solid var(--secondary);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            font-size: 0.9rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--gray-light);
+        }
+        
+        th { 
+            background: #f8fafc; 
+            font-weight: 600;
+            color: var(--dark);
+        }
+        
+        tr:hover {
+            background: #f8fafc;
+        }
+        
+        .error-content { 
+            color: #b91c1c; 
+            background: #fee2e2; 
+            padding: 1rem; 
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 400px;
+            width: 100%;
+            margin: 1.5rem 0;
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid var(--gray-light);
+        }
+        
+        .result-item {
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--gray-light);
+        }
+        
+        .result-item:last-child {
+            border-bottom: none;
+        }
+        
+        .result-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .processing-time {
+            font-size: 0.875rem;
+            color: var(--gray);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .message-timestamp {
+            font-size: 0.75rem;
+            color: var(--gray);
+            margin-top: 0.5rem;
+        }
+        
+        .sql-query {
+            background: #1e293b;
+            color: #f8fafc;
+            padding: 1rem;
+            border-radius: 8px;
+            font-family: monospace;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+        
+        .sql-keyword {
+            color: #7dd3fc;
+        }
+        
+        .sql-string {
+            color: #86efac;
+        }
+        
+        .sql-number {
+            color: #fca5a5;
+        }
+        
+        .sql-comment {
+            color: #64748b;
+        }
+
+        .explanation-box {
+            background: #f0f9f0;
+            padding: 1.5rem;
+            border-radius: 10px;
+            border-left: 5px solid #4CAF50;
+            margin: 1.5rem 0;
+        }
+
+        .explanation-box h3 {
+            color: #2e7d32;
+            margin-top: 0;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .summary-box h3 {
+            color: #e65100;
+            margin-top: 0;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .sql-query-box {
+            background: #f1f8ff;
+            padding: 1.5rem;
+            border-radius: 10px;
+            border-left: 5px solid #17a2b8;
+            margin: 1.5rem 0;
+        }
+
+        .sql-query-box h3 {
+            color: #0277bd;
+            margin-top: 0;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 2rem;
+            color: var(--gray);
+            font-size: 1.1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+
+        .section-order {
+            counter-reset: section-counter;
+        }
+
+        .ordered-section {
+            counter-increment: section-counter;
+            position: relative;
+        }
+
+        .ordered-section h3::before {
+            content: counter(section-counter) ". ";
+            font-weight: bold;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+                margin: 1rem;
+                border-radius: 8px;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+            
+            button {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .result-content, .history-content {
+                max-height: 400px;
+            }
+        }
+
+        .toast-notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 24px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .toast-notification.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        
+        .toast-info {
+            background: var(--primary);
+        }
+        
+        .toast-success {
+            background: var(--secondary);
+        }
+        
+        .toast-error {
+            background: var(--danger);
+        }
+        
+        .toast-warning {
+            background: var(--warning);
+        }
+
+        .chat-history-item {
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 8px;
+            border: 1px solid var(--gray-light);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .chat-history-item:hover {
+            background: #f8fafc;
+            border-color: var(--primary);
+        }
+
+        .chat-history-item.active {
+            background: #eff6ff;
+            border-color: var(--primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏥 Medical Analytics Assistant</h1>
+        <div id="connectionStatus" class="connection-status status-connecting">
+            Connecting to server...
+        </div>
+        
+        <div>
+            <label for="userIdInput" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">User ID</label>
+            <input type="text" id="userIdInput" placeholder="Enter your user ID (e.g., user123)" value="user123">
+        </div>
+        
+        <div>
+            <label for="queryInput" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Your Analytics Question</label>
+            <textarea id="queryInput" placeholder="Example queries:
+- Show me the top surgeons by case volume
+- What is our contribution margin per case type?
+- Analyze block time utilization by surgeon
+- Compare first case on-time start rates by case type"></textarea>
+        </div>
+        
+        <div class="button-group">
+            <button id="submitBtn" class="btn-primary" onclick="sendQuery()">
+                <span id="submitIcon">💬</span>
+                <span id="submitText">Ask Question</span>
+            </button>
+            <button id="historyBtn" class="btn-secondary" onclick="fetchChatHistory()">
+                <span>📜</span>
+                <span>View History</span>
+            </button>
+            <button id="clearBtn" class="btn-danger" onclick="clearCurrentChat()">
+                <span>🗑️</span>
+                <span>Clear Chat</span>
+            </button>
+        </div>
+        
+        <div id="resultSection" class="result-section">
+            <h2>Analytics Results</h2>
+            <div id="processingTime" class="processing-time">
+                <span>⏱️</span>
+                <span id="processingTimeText"></span>
+            </div>
+            <div id="resultContent" class="result-content"></div>
+        </div>
+        
+        <div id="historySection" class="history-section">
+            <h2>Chat History</h2>
+            <div id="historyContent" class="history-content"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/socket.io-client@4.7.5/dist/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.7.7/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
+    <script>
+        const serverUrl = window.location.protocol + '//' + window.location.host;
+        let socket;
+        let isProcessing = false;
+        window.activeCharts = [];
+        let currentConversationId = null;
+
+        // DOM Elements
+        const statusElement = document.getElementById('connectionStatus');
+        const userIdInput = document.getElementById('userIdInput');
+        const queryInput = document.getElementById('queryInput');
+        const submitBtn = document.getElementById('submitBtn');
+        const historyBtn = document.getElementById('historyBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const resultSection = document.getElementById('resultSection');
+        const resultContent = document.getElementById('resultContent');
+        const processingTimeText = document.getElementById('processingTimeText');
+        const submitIcon = document.getElementById('submitIcon');
+        const submitText = document.getElementById('submitText');
+        const historySection = document.getElementById('historySection');
+        const historyContent = document.getElementById('historyContent');
+
+        function initializeSocket() {
+            console.log('Initializing Socket.IO connection to:', serverUrl);
+            socket = io(serverUrl, {
+                transports: ['websocket', 'polling'],
+                timeout: 10000,
+                reconnection: true,
+                reconnectionDelay: 1000,
+                reconnectionAttempts: 5
+            });
+
+            socket.on('connect', () => {
+                statusElement.className = 'connection-status status-connected';
+                statusElement.textContent = '✅ Connected to server';
+                console.log('WebSocket connected successfully');
+            });
+
+            socket.on('disconnect', (reason) => {
+                statusElement.className = 'connection-status status-disconnected';
+                statusElement.textContent = `❌ Disconnected: ${reason}`;
+                console.log('WebSocket disconnected:', reason);
+            });
+
+            socket.on('connect_error', (error) => {
+                statusElement.className = 'connection-status status-disconnected';
+                statusElement.textContent = `❌ Connection failed: ${error.message}`;
+                console.error('WebSocket connection error:', error);
+                setTimeout(() => {
+                    if (socket) {
+                        console.log('Attempting to reconnect...');
+                        socket.connect();
+                    }
+                }, 5000);
+            });
+
+            socket.on('connection_success', (data) => {
+                console.log('Server message:', data);
+            });
+
+            // CORRECTED: Handle query response with proper error handling
+            socket.on('query_result', function(data) {
+                console.log('Received query response:', data);
+                
+                // Clear previous results
+                resultContent.innerHTML = '';
+                
+                // Check if data exists and has content
+                if (!data || !data.data || data.data.length === 0) {
+                    resultContent.innerHTML = '<div class="no-results">No response received</div>';
+                    setProcessingState(false);
+                    return;
+                }
+                
+                // Process each item in the response
+                data.data.forEach(item => {
+                    if (item.type === 'text' && item.content && item.content.html) {
+                        const itemDiv = document.createElement('div');
+                        itemDiv.className = 'result-item';
+                        itemDiv.innerHTML = item.content.html;
+                        resultContent.appendChild(itemDiv);
+                    }
+                });
+                
+                // Update conversation ID
+                if (data.conversation_id) {
+                    currentConversationId = data.conversation_id;
+                }
+                
+                // Update processing time
+                if (data.execution_time) {
+                    processingTimeText.textContent = `Processed in ${data.execution_time.toFixed(2)} seconds`;
+                }
+                
+                setProcessingState(false);
+                
+                // Auto-fetch updated chat history after successful query
+                setTimeout(() => {
+                    fetchChatHistory();
+                }, 500);
+            });
+
+            socket.on('query_error', (data) => {
+                console.error('Query error:', data);
+                resultContent.innerHTML = `
+                    <div class="error-content">
+                        <strong>Error:</strong> ${data.error || 'Unknown error occurred'}
+                    </div>
+                `;
+                setProcessingState(false);
+            });
+        }
+
+        function setProcessingState(processing) {
+            isProcessing = processing;
+            submitBtn.disabled = processing;
+            historyBtn.disabled = processing;
+            clearBtn.disabled = processing;
+            submitIcon.textContent = processing ? '⏳' : '💬';
+            submitText.textContent = processing ? ' Processing...' : ' Ask Question';
+        }
+
+        async function sendQuery() {
+            const query = queryInput.value.trim();
+            const userId = userIdInput.value.trim() || 'anonymous';
+            
+            if (!query) {
+                showToast('Please enter a question', 'error');
+                return;
+            }
+            
+            if (!socket || !socket.connected) {
+                // Fallback to HTTP API if WebSocket is not available
+                await sendQueryViaHttp(query, userId);
+                return;
+            }
+            
+            if (isProcessing) return;
+            
+            console.log('Sending WebSocket query:', query, 'User ID:', userId, 'Conversation ID:', currentConversationId);
+            
+            // Clear previous results
+            resultContent.innerHTML = '';
+            destroyAllCharts();
+            
+            socket.emit('query', { 
+                query, 
+                user_id: userId,
+                conversation_id: currentConversationId
+            });
+            setProcessingState(true);
+            statusElement.textContent = '🔄 Processing question...';
+            showResultSection();
+        }
+
+        async function sendQueryViaHttp(query, userId) {
+            try {
+                setProcessingState(true);
+                statusElement.textContent = '🔄 Processing question via HTTP...';
+                
+                // Clear previous results
+                resultContent.innerHTML = '';
+                destroyAllCharts();
+                
+                const response = await axios.post(`${serverUrl}/agent/api/query`, {
+                    query,
+                    user_id: userId,
+                    conversation_id: currentConversationId
+                });
+                
+                // CORRECTED: Handle HTTP response with proper error handling
+                const data = response.data;
+                if (data.success) {
+                    processingTimeText.textContent = `Processed in ${data.execution_time?.toFixed(2) || 'N/A'} seconds`;
+                    
+                    // Clear previous results
+                    resultContent.innerHTML = '';
+                    
+                    // Process each item in the response
+                    if (data.data && data.data.length > 0) {
+                        data.data.forEach(item => {
+                            if (item.type === 'text' && item.content && item.content.html) {
+                                const itemDiv = document.createElement('div');
+                                itemDiv.className = 'result-item';
+                                itemDiv.innerHTML = item.content.html;
+                                resultContent.appendChild(itemDiv);
+                            }
+                        });
+                    } else {
+                        resultContent.innerHTML = '<div class="no-results">No data returned from query</div>';
+                    }
+                    
+                    if (data.conversation_id) {
+                        currentConversationId = data.conversation_id;
+                    }
+                    
+                    // Auto-fetch updated chat history after successful query
+                    setTimeout(() => {
+                        fetchChatHistory();
+                    }, 500);
+                } else {
+                    resultContent.innerHTML = `
+                        <div class="error-content">
+                            <strong>Error:</strong> ${data.error || 'An unknown error occurred'}
+                        </div>
+                    `;
+                    processingTimeText.textContent = `Failed to process`;
+                }
+                
+                setProcessingState(false);
+            } catch (error) {
+                console.error('HTTP query error:', error);
+                resultContent.innerHTML = `
+                    <div class="error-content">
+                        <strong>Error:</strong> ${error.response?.data?.detail || error.message}
+                    </div>
+                `;
+                setProcessingState(false);
+            }
+        }
+
+        async function fetchChatHistory() {
+            const userId = userIdInput.value.trim() || 'anonymous';
+            
+            if (!userId) {
+                showToast('Please enter a user ID', 'error');
+                return;
+            }
+            
+            try {
+                const response = await axios.get(`${serverUrl}/agent/api/chat-history/${userId}?page=1&per_page=50`);
+                console.log('Chat history response:', response.data);
+                
+                if (response.data.success) {
+                    handleChatHistory(response.data);
+                } else {
+                    throw new Error('Failed to fetch chat history');
+                }
+            } catch (error) {
+                console.error('Error fetching chat history:', error);
+                historyContent.innerHTML = `<div class="error-content">Error loading chat history: ${error.message}</div>`;
+                historySection.style.display = 'block';
+                showToast('Failed to load chat history', 'error');
+            }
+        }
+
+        function clearCurrentChat() {
+            resultContent.innerHTML = '';
+            queryInput.value = '';
+            destroyAllCharts();
+            showToast('Chat cleared', 'info');
+        }
+
+        function handleChatHistory(data) {
+            historyContent.innerHTML = '';
+            
+            if (data.chat_history && data.chat_history.length > 0) {
+                // Sort by timestamp descending (newest first)
+                const sortedHistory = [...data.chat_history].sort((a, b) => {
+                    const timeA = new Date(a.timestamp || 0);
+                    const timeB = new Date(b.timestamp || 0);
+                    return timeB - timeA;
+                });
+
+                sortedHistory.forEach(conversation => {
+                    const conversationDiv = document.createElement('div');
+                    conversationDiv.className = 'chat-history-item';
+                    
+                    // Extract the main user query and assistant response
+                    const userMessage = conversation.chat_history?.find(msg => msg.role === 'user');
+                    const assistantMessage = conversation.chat_history?.find(msg => msg.role === 'assistant');
+                    
+                    const userQuery = userMessage?.content || conversation.query || 'No query';
+                    const assistantResponse = assistantMessage?.content || 'No response';
+                    
+                    // Create preview (first 100 chars of assistant response)
+                    const preview = assistantResponse.length > 100 
+                        ? assistantResponse.substring(0, 100) + '...' 
+                        : assistantResponse;
+                    
+                    const timestamp = conversation.timestamp ? new Date(conversation.timestamp).toLocaleString() : 'Unknown time';
+                    
+                    conversationDiv.innerHTML = `
+                        <div style="margin-bottom: 0.5rem;">
+                            <strong>👤 You:</strong> ${userQuery}
+                        </div>
+                        <div style="margin-bottom: 0.5rem;">
+                            <strong>🤖 Assistant:</strong> ${preview}
+                        </div>
+                        <div style="font-size: 0.8rem; color: var(--gray);">
+                            ${timestamp}
+                            ${conversation.result_count ? ` • ${conversation.result_count} results` : ''}
+                            ${conversation.execution_time ? ` • ${conversation.execution_time.toFixed(2)}s` : ''}
+                        </div>
+                    `;
+                    
+                    // Add click handler to load this conversation
+                    conversationDiv.addEventListener('click', () => {
+                        loadConversation(conversation);
+                    });
+                    
+                    historyContent.appendChild(conversationDiv);
+                });
+            } else {
+                historyContent.innerHTML = '<p>No chat history available. Start by asking a question!</p>';
+            }
+            
+            historySection.style.display = 'block';
+            resultSection.style.display = 'none';
+        }
+
+        function loadConversation(conversation) {
+            resultContent.innerHTML = '';
+            
+            if (conversation.chat_history) {
+                conversation.chat_history.forEach(message => {
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = `history-message ${message.role}`;
+                    
+                    const roleIcon = message.role === 'user' ? '👤' : '🤖';
+                    const roleText = message.role === 'user' ? 'You' : 'Assistant';
+                    
+                    messageDiv.innerHTML = `
+                        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                            <span style="font-size: 1.25rem;">${roleIcon}</span>
+                            <strong>${roleText}</strong>
+                        </div>
+                        <div>${message.content}</div>
+                        ${message.timestamp ? `
+                            <div class="message-timestamp">
+                                ${new Date(message.timestamp).toLocaleString()}
+                            </div>
+                        ` : ''}
+                    `;
+                    
+                    resultContent.appendChild(messageDiv);
+                });
+            }
+            
+            showResultSection();
+            processingTimeText.textContent = conversation.execution_time 
+                ? `Originally processed in ${conversation.execution_time.toFixed(2)} seconds`
+                : 'Loaded from history';
+            
+            // Set the conversation ID for continuity
+            if (conversation.conversation_id) {
+                currentConversationId = conversation.conversation_id;
+            }
+        }
+
+        function destroyAllCharts() {
+            if (window.activeCharts && window.activeCharts.length > 0) {
+                window.activeCharts.forEach(chart => {
+                    try {
+                        chart.destroy();
+                    } catch (e) {
+                        console.error('Error destroying chart:', e);
+                    }
+                });
+                window.activeCharts = [];
+            }
+        }
+
+        function showResultSection() {
+            resultSection.style.display = 'block';
+            historySection.style.display = 'none';
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast-notification toast-${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 10);
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    document.body.removeChild(toast);
+                }, 300);
+            }, 3000);
+        }
+
+        window.addEventListener('resize', () => {
+            if (window.activeCharts && window.activeCharts.length > 0) {
+                window.activeCharts.forEach(chart => {
+                    try {
+                        chart.resize();
+                    } catch (e) {
+                        console.error('Error resizing chart:', e);
+                    }
+                });
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('Medical Analytics Assistant loaded');
+            initializeSocket();
+            
+            // Set up enter key to send query
+            queryInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendQuery();
+                }
+            });
+            
+            // Auto-focus query input
+            queryInput.focus();
+        });
+    </script>
+</body>
+</html>
